@@ -821,13 +821,13 @@ async def detect_lane(request: Request, user=Depends(require_user), file: Upload
     frame_small = cv2.resize(frame_bgr, (640, 360))
     frame_buffer.add_frame(frame_small)
 
-    frame_proc = cv2.resize(frame_bgr, (1280, 720))
+    frame_proc = cv2.resize(frame_bgr, (960, 540))
     frame_rgb = cv2.cvtColor(frame_proc, cv2.COLOR_BGR2RGB)
     out_rgb = lane_system.forward(frame_rgb)
     out_bgr = cv2.cvtColor(out_rgb, cv2.COLOR_RGB2BGR)
 
     overlay_small = cv2.resize(out_bgr, (640, 360))
-    ok, jpg_buf = cv2.imencode(".jpg", overlay_small, [int(cv2.IMWRITE_JPEG_QUALITY), 65])
+    ok, jpg_buf = cv2.imencode(".jpg", overlay_small, [int(cv2.IMWRITE_JPEG_QUALITY), 55])
     if not ok:
         return JSONResponse({"error": "Encoding failed"}, status_code=500)
 
