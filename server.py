@@ -1,4 +1,5 @@
 # server.py
+import asyncio
 import base64
 import os
 import threading
@@ -775,40 +776,21 @@ def admin_update_driver_status(
 
 
 # ------------------------------------------
-# MAIN: /detect endpoint
+# Frame processing — runs in a thread pool via asyncio.to_thread.
+# Semaphore(1) ensures only one frame processes at a time (lane_system
+# is stateful and not thread-safe), while keeping the event loop free
+# to accept incoming connections during processing.
 # ------------------------------------------
-@app.post("/detect")
-async def detect_lane(request: Request, user=Depends(require_user), file: UploadFile = File(...)):
+_detect_semaphore = asyncio.Semaphore(1)
+
+
+def _process_frame(contents: bytes, location: Optional[Dict], uid: str, trip_id: str) -> dict:
     global saving_clip, last_violation_time, violation_armed, no_violation_streak, last_frame_time
-
-    if isinstance(user, JSONResponse):
-        return user
-
-    uid = user["uid"]
-
-    trip_id = request.headers.get("X-Trip-Id", "").strip()
-    if not trip_id:
-        return JSONResponse({"error": "tripId required (send X-Trip-Id header)"}, status_code=400)
-
-    trip_err = _require_trip_for_user(uid, trip_id)
-    if trip_err:
-        return trip_err
-
-    location = None
-    try:
-        lat = request.headers.get("X-Latitude")
-        lng = request.headers.get("X-Longitude")
-        if lat and lng:
-            location = {"lat": float(lat), "lng": float(lng)}
-    except (ValueError, TypeError):
-        pass
-
-    contents = await file.read()
 
     np_arr = np.frombuffer(contents, np.uint8)
     frame_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     if frame_bgr is None:
-        return JSONResponse({"error": "Invalid image"}, status_code=400)
+        return {"error": "Invalid image"}
 
     now = time.time()
     if last_frame_time > 0 and (now - last_frame_time) > STREAM_RESET_GAP_SECONDS:
@@ -829,7 +811,7 @@ async def detect_lane(request: Request, user=Depends(require_user), file: Upload
     overlay_small = cv2.resize(out_bgr, (640, 360))
     ok, jpg_buf = cv2.imencode(".jpg", overlay_small, [int(cv2.IMWRITE_JPEG_QUALITY), 55])
     if not ok:
-        return JSONResponse({"error": "Encoding failed"}, status_code=500)
+        return {"error": "Encoding failed"}
 
     overlay_b64 = base64.b64encode(jpg_buf).decode("utf-8")
 
@@ -897,3 +879,40 @@ async def detect_lane(request: Request, user=Depends(require_user), file: Upload
         "saving_clip": saving_clip,
         "tripId": trip_id,
     }
+
+
+# ------------------------------------------
+# MAIN: /detect endpoint
+# ------------------------------------------
+@app.post("/detect")
+async def detect_lane(request: Request, user=Depends(require_user), file: UploadFile = File(...)):
+    if isinstance(user, JSONResponse):
+        return user
+
+    uid = user["uid"]
+
+    trip_id = request.headers.get("X-Trip-Id", "").strip()
+    if not trip_id:
+        return JSONResponse({"error": "tripId required (send X-Trip-Id header)"}, status_code=400)
+
+    trip_err = _require_trip_for_user(uid, trip_id)
+    if trip_err:
+        return trip_err
+
+    location = None
+    try:
+        lat = request.headers.get("X-Latitude")
+        lng = request.headers.get("X-Longitude")
+        if lat and lng:
+            location = {"lat": float(lat), "lng": float(lng)}
+    except (ValueError, TypeError):
+        pass
+
+    contents = await file.read()
+
+    async with _detect_semaphore:
+        result = await asyncio.to_thread(_process_frame, contents, location, uid, trip_id)
+
+    if "error" in result:
+        return JSONResponse(result, status_code=400)
+    return result

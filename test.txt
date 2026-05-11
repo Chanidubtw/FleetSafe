@@ -31,3 +31,4 @@ curl -X POST http://localhost:8000/admin/init \
 
 curl -X POST http://localhost:8000/admin/init -H "Content-Type: application/json" -d '{"uid": "99llbTzhwzVVbLgpOlTAkQoDoMa2",       
   "secret": "chanidu123"}'
+  
