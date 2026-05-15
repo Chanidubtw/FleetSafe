@@ -2,8 +2,7 @@
 <h1 align="center">Driver Drowsiness Detector 👋</h1>
 <p>
   <img alt="Version" src="https://img.shields.io/badge/version-1.0-blue.svg?cacheSeconds=2592000" />
-    <img alt="Twitter: NeelanjanManna" src="https://img.shields.io/twitter/follow/NeelanjanManna.svg?style=social" />
-  </a>
+      </a>
 </p>
 
 > A real-time drowsiness detection system for drivers, which alerts the driver if they fall asleep due to fatigue while still driving. The computer vision algorithm used for the implementation uses a trifold approach to detect drowsiness, including the measurement of forward head tilt angle, measurement of eye aspect ratio (to detect closure of eyes) and measurement of mouth aspect ratio (to detect yawning).
@@ -49,6 +48,3 @@ Press `q` to exit the app window.
 - On macOS, alarm audio uses `afplay`; on other platforms, a fallback alarm is used.
 
 
-## Show your support
-
-Give a ⭐️ if this project helped you!
