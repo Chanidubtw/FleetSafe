@@ -735,14 +735,21 @@ class LaneLines:
         lt, lc = self.left_marking
         rt, rc = self.right_marking
 
-        cv2.putText(out_img, f"LEFT:  {lt} ({lc:.2f})", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
-        cv2.putText(out_img, f"RIGHT: {rt} ({rc:.2f})", (10, 58),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
-        cv2.putText(out_img, "Good Lane Keeping", (10, 90),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-        cv2.putText(out_img, "Vehicle {:.2f} m from center".format(pos), (10, 118),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
+        # Semi-transparent background box with border
+        bx1, by1, bx2, by2 = 8, 118, 410, 272
+        panel = out_img.copy()
+        cv2.rectangle(panel, (bx1, by1), (bx2, by2), (20, 20, 20), -1)
+        cv2.addWeighted(panel, 0.55, out_img, 0.45, 0, out_img)
+        cv2.rectangle(out_img, (bx1, by1), (bx2, by2), (210, 100, 20), 2)
+
+        cv2.putText(out_img, f"LEFT:  {lt} ({lc:.2f})", (16, 148),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.68, (255, 255, 255), 2)
+        cv2.putText(out_img, f"RIGHT: {rt} ({rc:.2f})", (16, 180),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.68, (255, 255, 255), 2)
+        cv2.putText(out_img, "Good Lane Keeping", (16, 218),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.80, (0, 255, 0), 2)
+        cv2.putText(out_img, "Vehicle {:.2f} m from center".format(pos), (16, 254),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.58, (255, 255, 255), 1)
 
         return out_img
 
