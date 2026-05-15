@@ -101,3 +101,5 @@ def update_violation_ai_result(doc_id: str, ai_result: Dict[str, Any], failed: b
         "status": status,
         "updatedAt": firestore.SERVER_TIMESTAMP,
     })
+
+
